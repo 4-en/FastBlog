@@ -1,3 +1,7 @@
+# Configuration and Database
+config.json
+blog.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

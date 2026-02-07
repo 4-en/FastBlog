@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="intro">
+        <h1>HELLO_WORLD</h1>
+        <p>Welcome to my digital garden. I am a CS graduate and this is where I document my projects and thoughts.</p>
+        <hr>
+    </section>
+
+    <section class="blog-list">
+        <h2>[ RECENT_LOGS ]</h2>
+        
+        {% if posts %}
+            <ul style="list-style: none; padding: 0;">
+            {% for post in posts %}
+                <li style="margin-bottom: 20px;">
+                    <span class="date">[{{ post.date }}]</span> 
+                    <a href="/post/{{ post.id }}" style="font-weight: bold; font-size: 1.1em;">
+                        {{ post.title }}
+                    </a>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>NO ENTRIES FOUND IN DATABASE.</p>
+        {% endif %}
+    </section>
+{% endblock %}

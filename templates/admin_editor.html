@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ "[ EDIT_MODE ]" if post else "[ NEW_ENTRY_MODE ]" }}</h2>
+
+<form action="/admin/save" method="post" style="margin-top: 20px;">
+    {% if post %}
+        <input type="hidden" name="id" value="{{ post.id }}">
+    {% endif %}
+
+    <div style="margin-bottom: 15px;">
+        <label>HEADLINE:</label><br>
+        <input type="text" name="title" value="{{ post.title if post else '' }}" required autofocus style="width: 100%; padding: 10px; background: transparent; color: inherit; border: 1px solid var(--text-color); font-family: inherit;">
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <label>DATA_STREAM (MARKDOWN):</label><br>
+        <textarea name="content" rows="15" required style="width: 100%; padding: 10px; background: transparent; color: inherit; border: 1px solid var(--text-color); font-family: inherit;">{{ post.content if post else '' }}</textarea>
+    </div>
+
+    <div class="actions">
+        <button type="submit" style="background: var(--text-color); color: var(--bg-color); border: none; padding: 10px 20px; cursor: pointer; font-weight: bold;">
+            [ EXECUTE_SAVE ]
+        </button>
+        <a href="/admin" style="margin-left: 20px;">[ ABORT ]</a>
+    </div>
+</form>
+{% endblock %}

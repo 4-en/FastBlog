@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <article>
+        <header style="margin-bottom: 30px;">
+            <h1>{{ post.title }}</h1>
+            <small>LOG_ID: {{ post.id }} | TIMESTAMP: {{ post.date }}</small>
+            <hr>
+        </header>
+        
+        <div class="post-content">
+            {{ content | safe }}
+        </div>
+
+        <br><br>
+        <a href="/"><< RETURN_TO_ROOT</a>
+    </article>
+{% endblock %}

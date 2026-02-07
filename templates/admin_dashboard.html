@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>[ ADMIN_CONSOLE ]</h2>
+    <a href="/admin/new" class="btn">[ + NEW_ENTRY ]</a>
+</div>
+
+<table class="retro-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+    <thead>
+        <tr style="text-align: left; background: var(--text-color); color: var(--bg-color);">
+            <th style="padding: 10px;">ID</th>
+            <th style="padding: 10px;">TITLE</th>
+            <th style="padding: 10px;">ACTIONS</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for post in posts %}
+        <tr style="border-bottom: 1px dashed var(--text-color);">
+            <td style="padding: 10px;">{{ post.id }}</td>
+            <td style="padding: 10px;">
+                <a href="/post/{{ post.id }}">{{ post.title }}</a>
+            </td>
+            <td style="padding: 10px;">
+                <a href="/admin/edit/{{ post.id }}">[ EDIT ]</a>
+                
+                <form action="/admin/delete/{{ post.id }}" method="post" style="display:inline; margin-left: 10px;" onsubmit="return confirm('CONFIRM DELETION OF SECTOR {{ post.id }}?');">
+                    <button type="submit" style="background: none; border: none; color: red; cursor: pointer; font-family: inherit;">[ DEL ]</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

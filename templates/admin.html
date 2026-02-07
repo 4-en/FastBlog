@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header><h1>[ SYSTEM ADMINISTRATION ]</h1></header>
+    <main>
+        <form action="/admin/post" method="post">
+            <label>POST TITLE:</label><br>
+            <input type="text" name="title" required><br><br>
+            <label>MARKDOWN CONTENT:</label><br>
+            <textarea name="content" rows="15" required></textarea><br><br>
+            <button type="submit" style="background: var(--text-color); color: var(--bg-color); border: none; padding: 10px 20px; cursor: pointer;">
+                PUBLISH_TO_NETWORK
+            </button>
+        </form>
+    </main>
+</body>
+</html>

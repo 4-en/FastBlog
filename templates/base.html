@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Retro Portfolio</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="scanline"></div>
+
+    <header>
+        <nav>
+            <a href="/" class="logo">[{{ config.site_name }}]</a>
+            <span style="float: right;">
+                <a href="{{ config.github_url }}" target="_blank">GITHUB</a> |
+                <a href="/admin">ADMIN</a>
+            </span>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>
+            &copy; {{ config.copyright_year }} {{ config.author_name }} -
+            <a href="/impressum">IMPRINT</a> |
+            <a href="/privacy">PRIVACY_POLICY</a>
+        </p>
+    </footer>
+</body>
+
+</html>

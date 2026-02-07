@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>[ LEGAL_NOTICE ]</h1>
+<p>Information according to § 5 DDG:</p>
+<div style="border: 1px solid var(--text-color); padding: 20px;">
+    <p><strong>OPERATOR:</strong><br>
+       {{ config.legal_name }}<br>
+       {{ config.legal_address }}
+    </p>
+    <p><strong>CONTACT:</strong><br>
+       Email: {{ config.legal_email }}<br>
+       Phone: {{ config.legal_phone }}
+    </p>
+    <p><strong>RESPONSIBLE FOR CONTENT:</strong><br>
+       {{ config.legal_name }}<br>
+       According to § 18 MStV.
+    </p>
+</div>
+<br>
+<a href="/">
+    << RETURN_TO_ROOT</a>
+        {% endblock %}
