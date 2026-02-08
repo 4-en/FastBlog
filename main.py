@@ -27,12 +27,26 @@ DB_NAME = "blog.db"
 
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
+        # posts table: id, title, content, date
         conn.execute("""
             CREATE TABLE IF NOT EXISTS posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # pages (also markdown, but not as posts and separately manageable)
+        # id, title, content, route, date, include_in_nav
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                route TEXT NOT NULL UNIQUE,
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                include_in_nav BOOLEAN DEFAULT 0
             )
         """)
 
@@ -60,6 +74,10 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     if not (is_user_ok and is_pass_ok):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     return True
+
+
+def get_error_page(request: Request, code: int, message: str):
+    return templates.TemplateResponse("error.html", {"request": request, "code": code, "message": message}, status_code=code)
 
 # load markdown files from static/markdown and create routes for them
 blacklist_routes = ["/", "/post", "/admin"] 

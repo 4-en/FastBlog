@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="error">
+        <h1>[ ERROR {{ code }} ]</h1>
+        <p>{{ message }}</p>
+        <a href="/" style="color: var(--text-color); text-decoration: none; font-weight: bold;">RETURN_TO_HOME</a>
+    </section>
+{% endblock %}
