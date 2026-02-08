@@ -8,6 +8,9 @@ import time
 CONFIG_FILE = Path("config.json")
 
 class SiteConfig(BaseModel):
+    # Site Toggles
+    show_routes_in_nav: bool = True
+    
     # Site Meta
     site_name: str = "Portfolio"
     site_description: str = "A personal portfolio built with FastAPI and SQLite."
@@ -15,8 +18,9 @@ class SiteConfig(BaseModel):
     copyright_year: int = 2024
     
     # URLs
-    github_url: str = "https://github.com/yourusername"
-    linkedin_url: Optional[str] = ""
+    social_links: list = [
+        {"name": "GITHUB", "url": "https://github.com/4-en"},
+    ]
     
     # Legal / Impressum
     legal_name: str = "Max Mustermann"

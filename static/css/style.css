@@ -5,7 +5,6 @@
     --font-mono: 'Courier New', Courier, monospace;
 }
 
-/* Add this to ensure padding doesn't add to the width/height causing scrollbars */
 * {
     box-sizing: border-box;
 }
@@ -16,28 +15,17 @@ body {
     font-family: var(--font-mono);
     line-height: 1.6;
     max-width: 800px;
-    
-    /* --- CHANGED SECTION START --- */
-    /* 1. Make body a flex container */
     display: flex;
     flex-direction: column;
-    
-    /* 2. Force body to take full viewport height */
     min-height: 100vh;
-    
-    /* 3. Adjust spacing: Move vertical margin to padding to prevent 
-          100vh + margin from creating a scrollbar */
     margin: 0 auto;       
     padding: 40px 20px;   
-    /* --- CHANGED SECTION END --- */
-
     text-shadow: 0 0 5px rgba(0, 255, 65, 0.2);
 }
 
-/* --- NEW RULE --- */
-/* This pushes the footer down by taking up all available space */
 main {
     flex: 1;
+    width: 100%; /* Ensures content doesn't shrink weirdly */
 }
 
 a {
@@ -51,17 +39,31 @@ a:hover {
     color: var(--bg-color);
 }
 
+/* --- UPDATED HEADER & FOOTER --- */
 header, footer {
     border: 1px solid var(--text-color);
     padding: 20px;
-    /* Margin-bottom is fine for header, but we usually remove it 
-       from footer so it sits flush at the bottom if desired */
     margin-bottom: 20px;
 }
 
-/* Remove margin from footer so it aligns perfectly at the bottom */
 footer {
     margin-bottom: 0;
+}
+
+/* IMPORTANT: This replaces the "float: right" logic.
+   It creates a flexible container that spreads items apart.
+*/
+header nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allows items to wrap if screen is too tight */
+    gap: 15px;      /* Adds space between the logo and the links */
+}
+
+/* Ensure the span inside nav (your links) respects flexbox */
+header nav span {
+    display: block;
 }
 
 /* Retro Scanline Effect */
@@ -135,4 +137,56 @@ input, textarea {
 .btn-link:hover {
     background-color: var(--text-color);
     color: var(--bg-color);
+}
+
+.social-links a {
+    position: relative;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.social-links a:not(:last-child)::after {
+    content: "|";
+    position: absolute;
+    right: -14px;
+    color: var(--text-color);
+    pointer-events: none;
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 600px) {
+    body {
+        /* Less padding on small screens to give content more room */
+        padding: 20px 10px; 
+    }
+
+    /* Stack Header: Logo on top, Links below */
+    header nav {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    /* Make the footer nav stack neatly too */
+    footer nav {
+        display: block;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    footer p {
+        text-align: center;
+    }
+
+    /* Stack the Admin Header (Title + New Post Button) */
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* Make tables scrollable horizontally so they don't break the layout */
+    .retro-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap; /* Prevents text from wrapping awkwardly in cells */
+    }
 }

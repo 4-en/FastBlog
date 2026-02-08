@@ -14,9 +14,19 @@
     <header>
         <nav>
             <a href="/" class="logo">[{{ config.site_name }}]</a>
-            <span style="float: right;">
-                <a href="{{ config.github_url }}" target="_blank">GITHUB</a> |
-                <a href="/admin">ADMIN</a>
+
+            {% if config.show_routes_in_nav %}
+            {% for item in routes %}
+            <a href="{{ item.url }}">{{ item.name }}</a>
+            {% endfor %}
+            {% endif %}
+
+            <span class="social-links">
+
+                {% for social in config.social_links %}
+                <a href="{{ social.url }}" target="_blank">{{ social.name }}</a>
+                {% endfor %}
+
             </span>
         </nav>
     </header>

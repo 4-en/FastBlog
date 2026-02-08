@@ -82,11 +82,14 @@ for route, content in markdown_files:
         continue
     
     async def markdown_route(request: Request, content=content):
-        return templates.TemplateResponse("markdown.html", {"request": request, "content": content})
+        return templates.TemplateResponse("markdown.html", {"request": request, "content": content, "routes": top_level_routes})
     app.add_api_route(route, markdown_route, response_class=HTMLResponse)
     
     if route.count("/") == 1: # top level route like /about, not /docs/guide
-        top_level_routes.append(route)
+        top_level_routes.append({
+            "name": route.strip("/"),
+            "url": route.lower()
+        })
 
 # --- PUBLIC ROUTES ---
 @app.get("/", response_class=HTMLResponse)
@@ -104,16 +107,15 @@ async def read_post(request: Request, post_id: int):
         raise HTTPException(status_code=404, detail="Post not found")
         
     html_content = markdown.markdown(post["content"])
-    return templates.TemplateResponse("post.html", {"request": request, "post": post, "content": html_content})
+    return templates.TemplateResponse("post.html", {"request": request, "post": post, "content": html_content, "routes": top_level_routes})
 
 @app.get("/impressum", response_class=HTMLResponse)
 async def impressum(request: Request):
-    return templates.TemplateResponse("impressum.html", {"request": request})
+    return templates.TemplateResponse("impressum.html", {"request": request, "routes": top_level_routes})
 
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy(request: Request):
-    return templates.TemplateResponse("privacy.html", {"request": request})
-
+    return templates.TemplateResponse("privacy.html", {"request": request, "routes": top_level_routes})
 # --- ADMIN ROUTES ---
 
 # 1. Dashboard (List all posts)
