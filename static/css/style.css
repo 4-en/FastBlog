@@ -88,6 +88,10 @@ input, textarea {
     font-family: var(--font-mono);
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* Admin Specifics */
 .admin-header {
     display: flex;

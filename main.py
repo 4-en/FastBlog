@@ -53,6 +53,13 @@ def init_db():
                 include_in_nav BOOLEAN DEFAULT 0
             )
         """)
+        
+        # check if page with id 0 exists, if not, create it with intro content
+        page = conn.execute("SELECT * FROM pages WHERE id = 0").fetchone()
+        if not page:
+            conn.execute("INSERT INTO pages (id, title, content, route, include_in_nav) VALUES (0, 'Intro', '', '/index', 0)")
+        conn.commit()
+        
 
 # Initialize DB on startup
 init_db()
@@ -73,15 +80,18 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     is_pass_ok = secrets.compare_digest(hashed_pass, settings.admin_pass)
     
     if not (is_user_ok and is_pass_ok):
-        # send to login page with 401 status
-        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
     return True
 
 
 def get_error_page(request: Request, code: int, message: str):
     return templates.TemplateResponse(
         "error.html", 
-        {"request": request, "code": code, "message": message}, 
+        {"request": request, "code": code, "message": message, "routes": top_level_routes}, 
         status_code=code
     )
 
