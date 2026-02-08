@@ -11,6 +11,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi import Response
 from fastapi.responses import StreamingResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exceptions import RequestValidationError
 import markdown
 import secrets
 import os
@@ -76,7 +78,28 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 
 
 def get_error_page(request: Request, code: int, message: str):
-    return templates.TemplateResponse("error.html", {"request": request, "code": code, "message": message}, status_code=code)
+    return templates.TemplateResponse(
+        "error.html", 
+        {"request": request, "code": code, "message": message}, 
+        status_code=code
+    )
+
+# Handle planned HTTP Exceptions (404, 401, etc)
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return get_error_page(request, exc.status_code, exc.detail)
+
+# Handle Validation Errors (422 Unprocessable Entity)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return get_error_page(request, 422, "Invalid input data provided.")
+
+# Handle unexpected "boom" moments (500 errors)
+@app.exception_handler(Exception)
+async def universal_exception_handler(request: Request, exc: Exception):
+    # Log the actual error here so you can fix it later!
+    print(f"Unhandled error: {exc}") 
+    return get_error_page(request, 500, "Internal Server Error")
 
 # load markdown files from static/markdown and create routes for them
 blacklist_routes = ["/", "/post", "/admin"] 
@@ -146,7 +169,7 @@ async def cache_middleware(request: Request, call_next):
     # 2. Check Cache
     if cache_key in active_cache:
         cached_data = active_cache[cache_key]
-        print(f"[CACHE] Serving {cache_key} from cache")
+        # print(f"[CACHE] Serving {cache_key} from cache")
         return Response(
             content=cached_data["content"], 
             media_type=cached_data["media_type"],
@@ -160,7 +183,7 @@ async def cache_middleware(request: Request, call_next):
     if is_static_request:
         content_length = response.headers.get("content-length")
         if content_length and int(content_length) > MAX_STATIC_FILE_SIZE:
-            print(f"[CACHE] Not caching {cache_key} due to size {content_length} bytes")
+            # print(f"[CACHE] Not caching {cache_key} due to size {content_length} bytes")
             no_cache[cache_key] = True
             return response
     
@@ -175,7 +198,7 @@ async def cache_middleware(request: Request, call_next):
             body += chunk
             if len(body) > MAX_STATIC_FILE_SIZE and is_static_request:
                 # bail out of caching if we exceed size limit while reading
-                print(f"[CACHE] Not caching {cache_key} due to size exceeding limit while reading")
+                # print(f"[CACHE] Not caching {cache_key} due to size exceeding limit while reading")
                 no_cache[cache_key] = True
                 
                 async def remaining_stream():
