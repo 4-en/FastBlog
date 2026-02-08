@@ -5,19 +5,30 @@
 <p>Information according to § 5 DDG:</p>
 <div style="border: 1px solid var(--text-color); padding: 20px;">
     <p><strong>OPERATOR:</strong><br>
-       {{ config.legal_name }}<br>
-       {{ config.legal_address }}
+       <span onclick="decryptText(this)" class="uncrawl" data-enc="{{ config.legal_name }}">[ laever ot kcilC ]</span><br>
+       <span onclick="decryptText(this)" class="uncrawl" data-enc="{{ config.legal_address }}">[ laever ot kcilC ]</span>
     </p>
     <p><strong>CONTACT:</strong><br>
-       Email: {{ config.legal_email }}<br>
-       Phone: {{ config.legal_phone }}
+       Email: <span onclick="decryptText(this)" class="uncrawl" data-enc="{{ config.legal_email }}">[ laever ot kcilC ]</span><br>
+       Phone: <span onclick="decryptText(this)" class="uncrawl" data-enc="{{ config.legal_phone }}">[ laever ot kcilC ]</span>
     </p>
     <p><strong>RESPONSIBLE FOR CONTENT:</strong><br>
-       {{ config.legal_name }}<br>
+       <span onclick="decryptText(this)" class="uncrawl" data-enc="{{ config.legal_name }}">[ laever ot kcilC ]</span><br>
        According to § 18 MStV.
     </p>
 </div>
 <br>
+
+<script>
+function decryptText(element) {
+    // This is a placeholder function. In a real implementation, you would replace this with actual decryption logic.
+    // For demonstration, we'll just reverse the text back to normal.
+    const decoded = atob(element.dataset.enc);
+    element.innerText = decoded;
+    element.onclick = null; // Remove click handler after decryption
+}
+</script>
+
 <a href="/">
     << RETURN_TO_ROOT</a>
         {% endblock %}

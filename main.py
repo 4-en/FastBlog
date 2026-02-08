@@ -12,6 +12,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import markdown
 import secrets
 import os
+import hashlib
 
 app = FastAPI()
 security = HTTPBasic()
@@ -49,7 +50,12 @@ ADMIN_PASS = "raspberry"
 
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     is_user_ok = secrets.compare_digest(credentials.username, settings.admin_user)
-    is_pass_ok = secrets.compare_digest(credentials.password, settings.admin_pass)
+    
+    # Hash the provided password with the stored salt
+    sha_input = credentials.password + settings.admin_salt
+    hashed_pass = "sha256$" + hashlib.sha256(sha_input.encode()).hexdigest()
+    
+    is_pass_ok = secrets.compare_digest(hashed_pass, settings.admin_pass)
     
     if not (is_user_ok and is_pass_ok):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)

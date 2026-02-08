@@ -4,6 +4,9 @@ from pathlib import Path
 from pydantic import BaseModel
 from typing import Optional
 import time
+import hashlib
+import random
+import base64
 
 CONFIG_FILE = Path("config.json")
 
@@ -25,12 +28,23 @@ class SiteConfig(BaseModel):
     # Legal / Impressum
     legal_name: str = "Max Mustermann"
     legal_address: str = "Musterstraße 1, 12345 Musterstadt, Germany"
-    legal_email: str = "contact [at] domain [dot] com"
+    legal_email: str = "contact@domain.com"
     legal_phone: str = "+49 123 456789"
     
     # Admin Auth
     admin_user: str = "changeadmin"  # Default to be changed
     admin_pass: str = "changepass"  # Default to be changed
+    admin_salt: str = "somesalt"  # Used for hashing the password
+    
+def uncrawl(s:str) -> str:
+    """Simple obfuscation to hide email and phone from basic crawlers."""
+    s = s.replace("@", " ]at[ ").replace(".", " ]dot[ ")
+    s = reversed(s)
+    
+    # to base64
+    s = "".join(s)
+    s = base64.b64encode(s.encode()).decode()
+    return s
 
 def load_config() -> SiteConfig:
     """Loads config from file or creates default if missing."""
@@ -38,6 +52,7 @@ def load_config() -> SiteConfig:
         print(f"[!] Config file not found. Creating default: {CONFIG_FILE}")
         default_config = SiteConfig()
         default_config.copyright_year = time.localtime().tm_year  # Set current year
+        default_config.admin_salt = hashlib.sha256(str(random.random()).encode()).hexdigest()[:16]  # Generate random salt
         
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             f.write(default_config.model_dump_json(indent=4))
@@ -73,6 +88,20 @@ def load_config() -> SiteConfig:
                 print("\n[SECURITY ALERT] You are using the default password 'changepass'.")
                 print(f"Please change 'admin_pass' in {CONFIG_FILE} immediately.\n")
                 sys.exit(1) # Refuse to start
+                
+                
+            # check if password is hashed (prefix: sha256$) if not, hash it with the salt
+            if not config.admin_pass.startswith("sha256$"):
+                sha_input = config.admin_pass + config.admin_salt
+                hashed_pass = hashlib.sha256(sha_input.encode()).hexdigest()
+                config.admin_pass = f"sha256${hashed_pass}"
+                with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                    f.write(config.model_dump_json(indent=4))
+                    
+            config.legal_name = uncrawl(config.legal_name)
+            config.legal_address = uncrawl(config.legal_address)
+            config.legal_email = uncrawl(config.legal_email)
+            config.legal_phone = uncrawl(config.legal_phone)
                 
             return config
             
