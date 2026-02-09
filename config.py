@@ -15,6 +15,10 @@ class SiteConfig(BaseModel):
     # Site Settings
     show_routes_in_nav: bool = True
     theme: str = "retro-console"
+    show_privacy_policy: bool = True
+    show_impressum: bool = True
+    show_attribution: bool = True
+    
     
     # Site Meta
     site_name: str = "Portfolio"
@@ -37,6 +41,10 @@ class SiteConfig(BaseModel):
     admin_user: str = "changeadmin"  # Default to be changed
     admin_pass: str = "changepass"  # Default to be changed
     admin_salt: str = "somesalt"  # Used for hashing the password
+    
+    @staticmethod
+    def default_path():
+        return CONFIG_FILE
     
     @staticmethod
     def create_default():

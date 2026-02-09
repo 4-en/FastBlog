@@ -24,6 +24,10 @@ def get_parser():
     parser.add_argument("--theme", help="Theme name (e.g., 'light', 'dark')")
     parser.add_argument("--admin-user", help="Admin username")
     parser.add_argument("--admin-pass", help="Admin password")
+    parser.add_argument("--theme", help="Theme name (/static/css/themes/{name}.css)")
+    parser.add_argument("--show-privacy-policy", help="Show privacy policy link in footer")
+    parser.add_argument("--show-impressum", help="Show impressum link in footer")
+    parser.add_argument("--show-attribution", help="Show attribution link in footer")
     return parser
 
 def init_auto_config(args):
@@ -48,9 +52,30 @@ def init_auto_config(args):
         config.admin_user = args.admin_user
     if args.admin_pass:
         config.admin_pass = args.admin_pass
-    
+    if args.theme:
+        config.theme = args.theme
+    if args.show_privacy_policy is not None:
+        config.show_privacy_policy = args.show_privacy_policy.lower() in ['true', '1', 'yes', 'y']
+    if args.show_impressum is not None:
+        config.show_impressum = args.show_impressum.lower() in ['true', '1', 'yes', 'y']
+    if args.show_attribution is not None:
+        config.show_attribution = args.show_attribution.lower() in ['true', '1', 'yes', 'y']
     return config
   
+def get_bool_input(prompt, default=True, true_label="Yes", false_label="No"):
+    while True:
+        print(prompt, end="")
+        print(f" [{true_label}/{false_label}]", end="")
+        print(": ", end="")
+        value = input().strip().lower()
+        if not value and default is not None:
+            return default
+        if value in ['y', 'yes', true_label.lower()]:
+            return True
+        elif value in ['n', 'no', false_label.lower()]:
+            return False
+        else:
+            print(colorama.Fore.RED + "Invalid input. Please enter yes or no." + colorama.Fore.RESET)
 
 def get_input(prompt, default=None, check_func=None, requirements_info=None):
     while True:
@@ -72,7 +97,17 @@ def get_input(prompt, default=None, check_func=None, requirements_info=None):
   
 
 def init_manual_config(args):
+    
+    
     config = SiteConfig.create_default()
+    
+    # check if file already exists and ask for confirmation to overwrite
+    if os.path.exists(config.default_path()):
+        overwrite = get_bool_input(colorama.Fore.YELLOW + f"Config file {config.default_path()} already exists. Do you want to overwrite it?" + colorama.Fore.RESET, default=False)
+        if not overwrite:
+            print(colorama.Fore.GREEN + "Keeping existing config. Exiting setup." + colorama.Fore.RESET)
+            exit(0)
+        print()
     
     
     
@@ -82,6 +117,13 @@ def init_manual_config(args):
         print(subtitle_color + "Admin Credentials" + colorama.Fore.RESET)
     config.admin_user = args.admin_user or get_input(f"{text_color}Admin Username", check_func=lambda x: len(x) >= 3, requirements_info="At least 3 characters")
     config.admin_pass = args.admin_pass or get_input(f"{text_color}Admin Password", check_func=lambda x: len(x) >= 8, requirements_info="At least 8 characters")
+    
+    if not all([args.theme, args.show_privacy_policy is not None, args.show_impressum is not None, args.show_attribution is not None]):
+        print(subtitle_color + "Site Appearance" + colorama.Fore.RESET)
+    config.theme = args.theme or get_input(f"{text_color}Theme Name (corresponding CSS file in /static/css/themes/)", default=config.theme)
+    config.show_privacy_policy = args.show_privacy_policy if args.show_privacy_policy is not None else get_bool_input(f"{text_color}Show Privacy Policy Link in Footer?", default=config.show_privacy_policy)
+    config.show_impressum = args.show_impressum if args.show_impressum is not None else get_bool_input(f"{text_color}Show Impressum Link in Footer?", default=config.show_impressum)
+    config.show_attribution = args.show_attribution if args.show_attribution is not None else get_bool_input(f"{text_color}Show Attribution Link in Footer?", default=config.show_attribution)
     
     if not all([args.title, args.description, args.author]):
         print(subtitle_color + "Site Information" + colorama.Fore.RESET)
