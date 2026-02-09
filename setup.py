@@ -62,6 +62,11 @@ def init_auto_config(args):
     return config
   
 def get_bool_input(prompt, default=True, true_label="Yes", false_label="No"):
+    
+    true_label = true_label.lower() if not default else true_label.capitalize()
+    false_label = false_label.lower() if default else false_label.capitalize()
+
+    
     while True:
         print(prompt, end="")
         print(f" [{true_label}/{false_label}]", end="")
