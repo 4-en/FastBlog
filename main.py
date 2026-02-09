@@ -1,46 +1,48 @@
-
 from config import load_config
-
-settings = load_config()
-
 import sqlite3
-from fastapi import FastAPI, Request, Depends, HTTPException, status, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi import Response
-from fastapi.responses import StreamingResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from fastapi.exceptions import RequestValidationError
-import markdown
 import secrets
 import os
 import hashlib
 
+from fastapi import FastAPI, Request, Depends, HTTPException, status, Form
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.exceptions import RequestValidationError
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
+import markdown
+import cachetools
 
-# load theme, ie check if static/themes/{theme}.css exists, else fallback to default
-DEFAULT_THEME = "retro-console"
-theme_path = os.path.join("static", "css", "themes", f"{settings.theme}.css")
-if not os.path.exists(theme_path):
-    print(f"[!] Theme '{settings.theme}' not found, falling back to default theme '{DEFAULT_THEME}'.")
-    settings.theme = DEFAULT_THEME
+# --- CONFIGURATION ---
+settings = load_config()
 
+# Ensure we have a secret key for sessions. 
+# In production, this should be in your config file.
+SECRET_KEY = getattr(settings, "secret_key", secrets.token_hex(32))
 
 app = FastAPI()
-security = HTTPBasic()
+
+# Add Session Middleware (Enables request.session)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 templates = Jinja2Templates(directory="templates")
 templates.env.globals["config"] = settings
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# --- THEME SETUP ---
+DEFAULT_THEME = "retro-console"
+theme_path = os.path.join("static", "css", "themes", f"{settings.theme}.css")
+if not os.path.exists(theme_path):
+    print(f"[!] Theme '{settings.theme}' not found, falling back to default theme '{DEFAULT_THEME}'.")
+    settings.theme = DEFAULT_THEME
+
 # --- DATABASE SETUP ---
 DB_NAME = "blog.db"
 
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
-        # posts table: id, title, content, date
         conn.execute("""
             CREATE TABLE IF NOT EXISTS posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,9 +51,6 @@ def init_db():
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # pages (also markdown, but not as posts and separately manageable)
-        # id, title, content, route, date, include_in_nav
         conn.execute("""
             CREATE TABLE IF NOT EXISTS pages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,41 +61,43 @@ def init_db():
                 include_in_nav BOOLEAN DEFAULT 0
             )
         """)
-        
-        # check if page with id 0 exists, if not, create it with intro content
         page = conn.execute("SELECT * FROM pages WHERE id = 0").fetchone()
         if not page:
             conn.execute("INSERT INTO pages (id, title, content, route, include_in_nav) VALUES (0, 'Intro', '', '/index', 0)")
         conn.commit()
-        
 
-# Initialize DB on startup
 init_db()
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row # Allows accessing columns by name
+    conn.row_factory = sqlite3.Row
     return conn
 
+# --- AUTHENTICATION LOGIC ---
 
-def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
-    is_user_ok = secrets.compare_digest(credentials.username, settings.admin_user)
-    
-    # Hash the provided password with the stored salt
-    sha_input = credentials.password + settings.admin_salt
+class NotAuthenticatedException(Exception):
+    pass
+
+def check_admin_session(request: Request):
+    """Dependency to check if user is logged in via session."""
+    user = request.session.get("user")
+    if not user or user != settings.admin_user:
+        raise NotAuthenticatedException()
+    return user
+
+@app.exception_handler(NotAuthenticatedException)
+async def not_authenticated_handler(request: Request, exc: NotAuthenticatedException):
+    """Redirects unauthenticated users to the login page."""
+    return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
+
+def verify_password(plain_password, stored_hash, salt):
+    """Helper to verify password against the stored config."""
+    sha_input = plain_password + salt
     hashed_pass = "sha256$" + hashlib.sha256(sha_input.encode()).hexdigest()
-    
-    is_pass_ok = secrets.compare_digest(hashed_pass, settings.admin_pass)
-    
-    if not (is_user_ok and is_pass_ok):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return True
+    return secrets.compare_digest(hashed_pass, stored_hash)
 
 
+# --- ERROR HANDLERS ---
 def get_error_page(request: Request, code: int, message: str):
     return templates.TemplateResponse(
         "error.html", 
@@ -104,30 +105,27 @@ def get_error_page(request: Request, code: int, message: str):
         status_code=code
     )
 
-# Handle planned HTTP Exceptions (404, 401, etc)
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    
     return get_error_page(request, exc.status_code, exc.detail)
 
-# Handle Validation Errors (422 Unprocessable Entity)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return get_error_page(request, 422, "Invalid input data provided.")
 
-# Handle unexpected "boom" moments (500 errors)
 @app.exception_handler(Exception)
 async def universal_exception_handler(request: Request, exc: Exception):
-    # Log the actual error here so you can fix it later!
     print(f"Unhandled error: {exc}") 
     return get_error_page(request, 500, "Internal Server Error")
 
-# load markdown files from static/markdown and create routes for them
-blacklist_routes = ["/", "/post", "/admin"] 
+
+# --- MARKDOWN LOADING (Existing logic) ---
+blacklist_routes = ["/", "/post", "/admin", "/login", "/logout"] 
 markdown_dir = "static/markdown"
 intro_content = ""
 markdown_files = []
-# load markdown files and routes recursively
+top_level_routes = []
+
 for root, dirs, files in os.walk(markdown_dir):
     for file in files:
         if file.endswith(".md"):
@@ -140,117 +138,75 @@ for root, dirs, files in os.walk(markdown_dir):
                     intro_content = html_content
                 else:
                     markdown_files.append((route_path, html_content))
-                    
-top_level_routes = []
+
 for route, content in markdown_files:
-    
     if route in blacklist_routes:
-        print(f"[!] Route '{route}' is blacklisted and will not be created for {filepath}.")
         continue
     
     async def markdown_route(request: Request, content=content):
         return templates.TemplateResponse("markdown.html", {"request": request, "content": content, "routes": top_level_routes})
     app.add_api_route(route, markdown_route, response_class=HTMLResponse)
     
-    if route.count("/") == 1: # top level route like /about, not /docs/guide
-        top_level_routes.append({
-            "name": route.strip("/"),
-            "url": route.lower()
-        })
-        
-        
-# --- Caching SETUP ---
-# middleware for caching
-MAX_STATIC_CACHE = 1000
-MAX_STATIC_FILE_SIZE = 1024 * 1024 * 1  # 1 MB -> max total cache size is 1 GB, but usually much less
-MAX_PAGE_CACHE = 1000
+    if route.count("/") == 1:
+        top_level_routes.append({"name": route.strip("/"), "url": route.lower()})
 
-import cachetools
+
+# --- CACHING SETUP (Existing Logic) ---
+MAX_STATIC_CACHE = 1000
+MAX_STATIC_FILE_SIZE = 1024 * 1024 * 1 
+MAX_PAGE_CACHE = 1000
 static_cache = cachetools.LRUCache(maxsize=MAX_STATIC_CACHE)
 page_cache = cachetools.LRUCache(maxsize=MAX_PAGE_CACHE)
-no_cache = cachetools.LRUCache(maxsize=MAX_STATIC_CACHE * 10) # separate cache to track non-cacheable items and avoid repeated processing
+no_cache = cachetools.LRUCache(maxsize=MAX_STATIC_CACHE * 10)
 
 @app.middleware("http")
 async def cache_middleware(request: Request, call_next):
-    
     cache_key = request.url.path
-    
-    # 1. Filter non-cacheable requests
     if (request.method != "GET" or 
         request.url.path.startswith("/admin") or
+        request.url.path.startswith("/login") or # Don't cache login
+        request.url.path.startswith("/logout") or # Don't cache logout
         request.url.query or
         request.url.path.startswith("/api") or
         cache_key in no_cache):
         return await call_next(request)
     
-    
     is_static_request = cache_key.startswith("/static/")
     active_cache = static_cache if is_static_request else page_cache
 
-    # 2. Check Cache
     if cache_key in active_cache:
         cached_data = active_cache[cache_key]
-        # print(f"[CACHE] Serving {cache_key} from cache")
-        return Response(
-            content=cached_data["content"], 
-            media_type=cached_data["media_type"],
-            headers=cached_data["headers"]
-        )
+        return Response(content=cached_data["content"], media_type=cached_data["media_type"], headers=cached_data["headers"])
     
-    # 3. Get fresh response
     response = await call_next(request)
     
-    # check content length for static files, if too large, don't cache and add to no_cache to avoid repeated processing
     if is_static_request and response.status_code == 200:
         content_length = response.headers.get("content-length")
         if content_length and int(content_length) > MAX_STATIC_FILE_SIZE:
-            # print(f"[CACHE] Not caching {cache_key} due to size {content_length} bytes")
             no_cache[cache_key] = True
             return response
     
-    # Only cache successful 200 OK responses
     if response.status_code == 200:
-        
         headers = dict(response.headers)
-        
-        # consume the body to store it
         body = b""
         async for chunk in response.body_iterator:
             body += chunk
             if len(body) > MAX_STATIC_FILE_SIZE and is_static_request:
-                # bail out of caching if we exceed size limit while reading
-                # print(f"[CACHE] Not caching {cache_key} due to size exceeding limit while reading")
                 no_cache[cache_key] = True
-                
                 async def remaining_stream():
                     yield body
                     async for chunk in response.body_iterator:
                         yield chunk
                 return StreamingResponse(remaining_stream(), media_type=response.media_type, headers=headers)
         
-        # Check size limits for static files
         if is_static_request and len(body) > MAX_STATIC_FILE_SIZE:
             return Response(content=body, media_type=response.media_type, headers=headers)
 
-        # Store in cache
-        active_cache[cache_key] = {
-            "content": body,
-            "headers": headers,
-            "media_type": response.media_type
-        }
-        
-        # Return a new response because we exhausted the original iterator
+        active_cache[cache_key] = {"content": body, "headers": headers, "media_type": response.media_type}
         return Response(content=body, media_type=response.media_type, headers=headers)
-    elif False and response.status_code == 404 and not is_static_request:
-        # disabled for now
-        # try again with /static/{requested_path} for static files
-        static_path = "/static" + request.url.path
-        request.scope["path"] = static_path
-        response = await cache_middleware(request, call_next)
 
     return response
-    
-    
+
 
 # --- PUBLIC ROUTES ---
 @app.get("/", response_class=HTMLResponse)
@@ -263,95 +219,117 @@ async def read_root(request: Request):
 async def read_post(request: Request, post_id: int):
     with get_db_connection() as conn:
         post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
-    
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-        
     html_content = markdown.markdown(post["content"])
     return templates.TemplateResponse("post.html", {"request": request, "post": post, "content": html_content, "routes": top_level_routes, "theme": settings.theme})
 
 @app.get("/impressum", response_class=HTMLResponse)
 async def impressum(request: Request):
     return templates.TemplateResponse("impressum.html", {"request": request, "routes": top_level_routes, "theme": settings.theme})
+
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy(request: Request):
     return templates.TemplateResponse("privacy.html", {"request": request, "routes": top_level_routes, "theme": settings.theme})
-# --- ADMIN ROUTES ---
+
+
+# --- AUTH ROUTES (Login/Logout) ---
 
 @app.get("/admin/login", response_class=HTMLResponse)
-async def admin_login(request: Request):
-    return templates.TemplateResponse("admin_login.html", {"request": request, "theme": settings.theme})
+async def login_page(request: Request):
+    # If already logged in, redirect to admin
+    if "user" in request.session:
+        return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse("admin_login.html", {"request": request, "theme": settings.theme, "error": None})
 
-# 1. Dashboard (List all posts)
+@app.post("/admin/login", response_class=HTMLResponse)
+async def login_submit(
+    request: Request, 
+    username: str = Form(...), 
+    password: str = Form(...)
+):
+    # Check Username
+    is_user_ok = secrets.compare_digest(username, settings.admin_user)
+    
+    # Check Password
+    is_pass_ok = verify_password(password, settings.admin_pass, settings.admin_salt)
+    
+    if is_user_ok and is_pass_ok:
+        # Set Session
+        request.session["user"] = username
+        return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
+    
+    # Login Failed
+    return templates.TemplateResponse("admin_login.html", {
+        "request": request, 
+        "theme": settings.theme, 
+        "error": "Invalid credentials"
+    }, status_code=401)
+
+@app.get("/admin/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
+
+
+# --- ADMIN ROUTES (Protected by Session) ---
+
+# 1. Dashboard
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, auth: bool = Depends(authenticate)):
+async def admin_dashboard(request: Request, user: str = Depends(check_admin_session)):
     with get_db_connection() as conn:
         posts = conn.execute("SELECT * FROM posts ORDER BY id DESC").fetchall()
-    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "posts": posts, "theme": settings.theme})
+    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "posts": posts, "theme": settings.theme, "user": user})
 
 # 2. Editor (New Post)
 @app.get("/admin/new", response_class=HTMLResponse)
-async def new_post_form(request: Request, auth: bool = Depends(authenticate)):
+async def new_post_form(request: Request, user: str = Depends(check_admin_session)):
     return templates.TemplateResponse("admin_editor.html", {"request": request, "post": None, "theme": settings.theme})
 
 # 3. Editor (Edit Existing)
 @app.get("/admin/edit/{post_id}", response_class=HTMLResponse)
-async def edit_post_form(request: Request, post_id: int, auth: bool = Depends(authenticate)):
+async def edit_post_form(request: Request, post_id: int, user: str = Depends(check_admin_session)):
     with get_db_connection() as conn:
         post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
-        
     return templates.TemplateResponse("admin_editor.html", {"request": request, "post": post, "theme": settings.theme})
 
-# 4. Save Action (Handle both Create and Update)
+# 4. Save Action
 @app.post("/admin/save")
 async def save_post(
     request: Request,
-    id: str = Form(""), # Optional ID
+    id: str = Form(""), 
     title: str = Form(...), 
     content: str = Form(...), 
-    auth: bool = Depends(authenticate)
+    user: str = Depends(check_admin_session)
 ):
     with get_db_connection() as conn:
         if id: # Update existing
             conn.execute("UPDATE posts SET title = ?, content = ? WHERE id = ?", (title, content, id))
-            
-            # invalidate cache for this post
+            # invalidate cache
             cache_key = f"/post/{id}"
             if cache_key in page_cache:
                 del page_cache[cache_key]
-            
         else: # Create new
             conn.execute("INSERT INTO posts (title, content) VALUES (?, ?)", (title, content))
         conn.commit()
         
     if "/" in page_cache:
-        del page_cache["/"]  # Invalidate homepage cache to show new/updated post
+        del page_cache["/"]
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
 
 # 5. Delete Action
 @app.post("/admin/delete/{post_id}")
-async def delete_post(post_id: int, auth: bool = Depends(authenticate)):
+async def delete_post(post_id: int, user: str = Depends(check_admin_session)):
     with get_db_connection() as conn:
         conn.execute("DELETE FROM posts WHERE id = ?", (post_id,)).commit()
         
-    # invalidate cache for this post
     cache_key = f"/post/{post_id}"
     if cache_key in page_cache:
         del page_cache[cache_key]
-        
     if "/" in page_cache:
-        del page_cache["/"]  # Invalidate homepage cache to remove deleted post
+        del page_cache["/"]
         
     return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
-
-
-# middleware for latency simulation (for testing loading states in the UI)
-# @app.middleware("http")
-# async def add_latency(request: Request, call_next):
-#     await asyncio.sleep(0.5) # Simulate 500ms latency
-#     response = await call_next(request)
-#     return response
-
 
 if __name__ == "__main__":
     import uvicorn

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="login-container">
     <h1>Admin Login</h1>
-    <form method="POST" action="/admin">
+    <form method="POST" action="/admin/login">
         <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" name="username" required>
@@ -14,5 +14,8 @@
         </div>
         <button type="submit">Login</button>
     </form>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
 </div>
 {% endblock %}
