@@ -21,7 +21,6 @@ def get_parser():
     parser.add_argument("--legal-name", help="Legal name for impressum")
     parser.add_argument("--legal-address", help="Legal address for impressum")
     parser.add_argument("--legal-phone", help="Legal phone number for impressum")
-    parser.add_argument("--theme", help="Theme name (e.g., 'light', 'dark')")
     parser.add_argument("--admin-user", help="Admin username")
     parser.add_argument("--admin-pass", help="Admin password")
     parser.add_argument("--theme", help="Theme name (/static/css/themes/{name}.css)")
