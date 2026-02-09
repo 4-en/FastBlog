@@ -1,0 +1,148 @@
+/* base.css - Layout & Structure */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0 auto;       
+    padding: 40px 20px;   
+    max-width: 800px;
+    line-height: 1.6;
+}
+
+main {
+    flex: 1;
+    width: 100%; /* Ensures content doesn't shrink weirdly */
+}
+
+a {
+    text-decoration: none;
+}
+
+/* Header & Footer Layout */
+header, footer {
+    padding: 20px;
+    margin-bottom: 20px;
+    /* Borders are defined in theme because they imply color */
+}
+
+footer {
+    margin-bottom: 0;
+}
+
+header nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; 
+    gap: 15px;      
+}
+
+header nav span {
+    display: block;
+}
+
+/* Form Elements Layout */
+input, textarea {
+    width: 100%;
+    padding: 10px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Admin Layout */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Table Layout */
+.fb-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.fb-table th, .fb-table td {
+    text-align: left;
+    padding: 10px;
+}
+
+/* Button Layouts */
+.btn {
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
+    text-decoration: underline;
+}
+
+/* Social Links Layout */
+.social-links a {
+    position: relative;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.social-links a:not(:last-child)::after {
+    content: "|";
+    position: absolute;
+    right: -14px;
+    pointer-events: none;
+}
+
+.uncrawl {
+    unicode-bidi: bidi-override;
+    direction: rtl;
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 600px) {
+    body {
+        padding: 20px 10px; 
+    }
+
+    header nav {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    footer nav {
+        display: block;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    footer p {
+        text-align: center;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .fb-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap; 
+    }
+}

@@ -1,0 +1,104 @@
+/* theme.css - Colors, Fonts, and Decoration */
+
+:root {
+    --bg-color: #0d0d0d;
+    --text-color: #00ff41;
+    --accent-color: #008f11;
+    --font-mono: 'Courier New', Courier, monospace;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.2);
+
+
+}
+
+
+/* Links */
+a {
+    color: var(--text-color);
+    border-bottom: 1px dashed var(--text-color);
+}
+
+a:hover {
+    background: var(--text-color);
+    color: var(--bg-color);
+}
+
+.date::before,
+a::before,
+h1::before,
+h2::before {
+    content: "[ ";
+}
+
+.date::after,
+a::after,
+h1::after,
+h2::after {
+    content: " ]";
+}
+
+.return-home {
+    content: " << RETURN_TO_ROOT";
+}
+
+
+/* Borders */
+header, footer, .admin-header {
+    border: 1px solid var(--text-color);
+}
+
+/* Retro Scanline Effect - Kept in theme as it is purely visual */
+body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    z-index: 2;
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+}
+
+/* Inputs */
+input, textarea {
+    background: transparent;
+    border: 1px solid var(--text-color);
+    color: var(--text-color);
+    font-family: var(--font-mono);
+}
+
+/* Tables */
+.fb-table th, .fb-table td {
+    border: 1px solid #333;
+}
+
+.fb-table th {
+    color: var(--bg-color);
+    background-color: var(--text-color);
+}
+
+/* Buttons */
+.btn {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+}
+
+.btn-link {
+    color: var(--text-color);
+}
+
+.btn-link:hover {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+}
+
+/* Social Separator Color */
+.social-links a:not(:last-child)::after {
+    color: var(--text-color);
+}

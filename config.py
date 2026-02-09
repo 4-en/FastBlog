@@ -12,8 +12,9 @@ import secrets
 CONFIG_FILE = Path("config.json")
 
 class SiteConfig(BaseModel):
-    # Site Toggles
+    # Site Settings
     show_routes_in_nav: bool = True
+    theme: str = "retro-console"
     
     # Site Meta
     site_name: str = "Portfolio"

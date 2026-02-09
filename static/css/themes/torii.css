@@ -1,0 +1,68 @@
+/* Work in progress */
+:root {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --gate-red: #d32f2f; /* Deeper, more traditional vermilion */
+    --font-main: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body {
+    background-color: var(--bg-color);
+}
+
+body {
+    color: var(--text-color);
+    font-family: var(--font-main);
+    border-top: 4px solid var(--gate-red); /* Top accent */
+}
+
+/* Structure imitating Torii gates */
+header, footer {
+    border-top: 4px double var(--gate-red);
+    border-bottom: 4px double var(--gate-red);
+    border-left: none;
+    border-right: none;
+    padding: 30px 20px;
+    background-color: #1a1a1a;
+}
+
+a {
+    color: #fff;
+    background-color: var(--gate-red);
+    padding: 0 4px;
+    border: none;
+    transition: background-color 0.3s;
+}
+
+a:hover {
+    background-color: #fff;
+    color: var(--gate-red);
+}
+
+input, textarea {
+    background: #000;
+    border: 1px solid #333;
+    border-left: 3px solid var(--gate-red); /* Accent on left */
+    color: #fff;
+}
+
+.btn {
+    background-color: transparent;
+    border: 2px solid var(--gate-red);
+    color: var(--gate-red);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+}
+
+.btn:hover {
+    background-color: var(--gate-red);
+    color: #fff;
+}
+
+/* Headers */
+h1, h2, h3 {
+    border-left: 5px solid var(--gate-red);
+    padding-left: 15px;
+}

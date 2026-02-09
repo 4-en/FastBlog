@@ -5,7 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Retro Portfolio</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/themes/{{ theme }}.css">
+    <link rel="icon" type="image/png" href="/static/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+    <link rel="shortcut icon" href="/static/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
+    <link rel="manifest" href="/static/site.webmanifest" />
 </head>
 
 <body>
@@ -13,7 +19,7 @@
 
     <header>
         <nav>
-            <a href="/" class="logo">[{{ config.site_name }}]</a>
+            <a href="/" class="logo">{{ config.site_name }}</a>
 
             {% if config.show_routes_in_nav %}
             {% for item in routes %}
@@ -39,7 +45,7 @@
         <p>
             &copy; {{ config.copyright_year }} {{ config.author_name }} -
             <a href="/impressum">IMPRINT</a> |
-            <a href="/privacy">PRIVACY_POLICY</a>
+            <a href="/privacy">PRIVACY POLICY</a>
         </p>
     </footer>
     <script src="/static/js/instant.js"></script>

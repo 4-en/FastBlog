@@ -18,6 +18,15 @@ import secrets
 import os
 import hashlib
 
+
+# load theme, ie check if static/themes/{theme}.css exists, else fallback to default
+DEFAULT_THEME = "retro-console"
+theme_path = os.path.join("static", "css", "themes", f"{settings.theme}.css")
+if not os.path.exists(theme_path):
+    print(f"[!] Theme '{settings.theme}' not found, falling back to default theme '{DEFAULT_THEME}'.")
+    settings.theme = DEFAULT_THEME
+
+
 app = FastAPI()
 security = HTTPBasic()
 
@@ -98,6 +107,7 @@ def get_error_page(request: Request, code: int, message: str):
 # Handle planned HTTP Exceptions (404, 401, etc)
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    
     return get_error_page(request, exc.status_code, exc.detail)
 
 # Handle Validation Errors (422 Unprocessable Entity)
@@ -191,7 +201,7 @@ async def cache_middleware(request: Request, call_next):
     response = await call_next(request)
     
     # check content length for static files, if too large, don't cache and add to no_cache to avoid repeated processing
-    if is_static_request:
+    if is_static_request and response.status_code == 200:
         content_length = response.headers.get("content-length")
         if content_length and int(content_length) > MAX_STATIC_FILE_SIZE:
             # print(f"[CACHE] Not caching {cache_key} due to size {content_length} bytes")
@@ -231,6 +241,12 @@ async def cache_middleware(request: Request, call_next):
         
         # Return a new response because we exhausted the original iterator
         return Response(content=body, media_type=response.media_type, headers=headers)
+    elif False and response.status_code == 404 and not is_static_request:
+        # disabled for now
+        # try again with /static/{requested_path} for static files
+        static_path = "/static" + request.url.path
+        request.scope["path"] = static_path
+        response = await cache_middleware(request, call_next)
 
     return response
     
@@ -241,7 +257,7 @@ async def cache_middleware(request: Request, call_next):
 async def read_root(request: Request):
     with get_db_connection() as conn:
         posts = conn.execute("SELECT * FROM posts ORDER BY id DESC").fetchall()
-    return templates.TemplateResponse("index.html", {"request": request, "posts": posts, "intro_content": intro_content, "routes": top_level_routes})
+    return templates.TemplateResponse("index.html", {"request": request, "posts": posts, "intro_content": intro_content, "routes": top_level_routes, "theme": settings.theme})
 
 @app.get("/post/{post_id}", response_class=HTMLResponse)
 async def read_post(request: Request, post_id: int):
@@ -252,32 +268,31 @@ async def read_post(request: Request, post_id: int):
         raise HTTPException(status_code=404, detail="Post not found")
         
     html_content = markdown.markdown(post["content"])
-    return templates.TemplateResponse("post.html", {"request": request, "post": post, "content": html_content, "routes": top_level_routes})
+    return templates.TemplateResponse("post.html", {"request": request, "post": post, "content": html_content, "routes": top_level_routes, "theme": settings.theme})
 
 @app.get("/impressum", response_class=HTMLResponse)
 async def impressum(request: Request):
-    return templates.TemplateResponse("impressum.html", {"request": request, "routes": top_level_routes})
-
+    return templates.TemplateResponse("impressum.html", {"request": request, "routes": top_level_routes, "theme": settings.theme})
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy(request: Request):
-    return templates.TemplateResponse("privacy.html", {"request": request, "routes": top_level_routes})
+    return templates.TemplateResponse("privacy.html", {"request": request, "routes": top_level_routes, "theme": settings.theme})
 # --- ADMIN ROUTES ---
 
 @app.get("/admin/login", response_class=HTMLResponse)
 async def admin_login(request: Request):
-    return templates.TemplateResponse("admin_login.html", {"request": request})
+    return templates.TemplateResponse("admin_login.html", {"request": request, "theme": settings.theme})
 
 # 1. Dashboard (List all posts)
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, auth: bool = Depends(authenticate)):
     with get_db_connection() as conn:
         posts = conn.execute("SELECT * FROM posts ORDER BY id DESC").fetchall()
-    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "posts": posts})
+    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "posts": posts, "theme": settings.theme})
 
 # 2. Editor (New Post)
 @app.get("/admin/new", response_class=HTMLResponse)
 async def new_post_form(request: Request, auth: bool = Depends(authenticate)):
-    return templates.TemplateResponse("admin_editor.html", {"request": request, "post": None})
+    return templates.TemplateResponse("admin_editor.html", {"request": request, "post": None, "theme": settings.theme})
 
 # 3. Editor (Edit Existing)
 @app.get("/admin/edit/{post_id}", response_class=HTMLResponse)
@@ -285,7 +300,7 @@ async def edit_post_form(request: Request, post_id: int, auth: bool = Depends(au
     with get_db_connection() as conn:
         post = conn.execute("SELECT * FROM posts WHERE id = ?", (post_id,)).fetchone()
         
-    return templates.TemplateResponse("admin_editor.html", {"request": request, "post": post})
+    return templates.TemplateResponse("admin_editor.html", {"request": request, "post": post, "theme": settings.theme})
 
 # 4. Save Action (Handle both Create and Update)
 @app.post("/admin/save")

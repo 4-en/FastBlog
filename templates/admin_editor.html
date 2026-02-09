@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>{{ "[ EDIT_MODE ]" if post else "[ NEW_ENTRY_MODE ]" }}</h2>
+<h2>{{ "EDIT_MODE" if post else "NEW_ENTRY_MODE" }}</h2>
 
 <form action="/admin/save" method="post" style="margin-top: 20px;">
     {% if post %}
@@ -20,9 +20,9 @@
 
     <div class="actions">
         <button type="submit" style="background: var(--text-color); color: var(--bg-color); border: none; padding: 10px 20px; cursor: pointer; font-weight: bold;">
-            [ EXECUTE_SAVE ]
+            EXECUTE_SAVE
         </button>
-        <a href="/admin" style="margin-left: 20px;">[ ABORT ]</a>
+        <a class="return-home" href="/admin" style="margin-left: 20px;">ABORT</a>
     </div>
 </form>
 {% endblock %}

@@ -102,18 +102,18 @@ input, textarea {
     margin-bottom: 20px;
 }
 
-.retro-table {
+.fb-table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.retro-table th, .retro-table td {
+.fb-table th, .fb-table td {
     text-align: left;
     padding: 10px;
     border: 1px solid #333;
 }
 
-.retro-table th {
+.fb-table th {
     color: var(--bg-color);
     background-color: var(--text-color);
 }
@@ -188,7 +188,7 @@ input, textarea {
     }
 
     /* Make tables scrollable horizontally so they don't break the layout */
-    .retro-table {
+    .fb-table {
         display: block;
         overflow-x: auto;
         white-space: nowrap; /* Prevents text from wrapping awkwardly in cells */

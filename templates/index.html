@@ -6,13 +6,13 @@
     </section>
 
     <section class="blog-list">
-        <h2>[ RECENT_LOGS ]</h2>
+        <h2>RECENT_LOGS</h2>
         
         {% if posts %}
             <ul style="list-style: none; padding: 0;">
             {% for post in posts %}
                 <li style="margin-bottom: 20px;">
-                    <span class="date">[{{ post.date }}]</span> 
+                    <span class="date">{{ post.date }}</span> 
                     <a href="/post/{{ post.id }}" style="font-weight: bold; font-size: 1.1em;">
                         {{ post.title }}
                     </a>
