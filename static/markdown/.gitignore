@@ -1,0 +1,4 @@
+# ignore everything in this directory, except for the .gitignore file itself and index.md
+*
+!.gitignore
+!index.md
