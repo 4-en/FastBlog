@@ -1,0 +1,141 @@
+/* simple-light theme */
+:root {
+    /* Background: Soft off-white (instead of deep black) 
+       Maintains the 'paper' feel suggested by the inputs 
+    */
+    --bg-color: #faf9f6; 
+    
+    /* Headings: Almost black (instead of light grey) 
+       Provides strong visual hierarchy
+    */
+    --h-color: #1a1a1a; 
+    
+    /* Body Text: Dark grey (instead of light grey)
+       Softer than pure black for readability
+    */
+    --text-color: #444444; 
+    
+    /* Accent: Kept the same to maintain brand identity.
+       Used for buttons, borders, and links.
+    */
+    --accent-color: #be538e; 
+    
+    /* Hover: Darker shade of the accent (instead of lighter)
+       Necessary for visibility against the light background.
+    */
+    --hover-color: #9e4275; 
+    
+    --font-serif: 'Georgia', 'Times New Roman', serif;
+    --font-sans: 'Satoshi', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Ensure background covers everything */
+html, body {
+    background-color: var(--bg-color);
+    height: 100%;
+}
+
+body {
+    color: var(--text-color);
+    font-family: var(--font-sans);
+    position: relative;
+
+    /* The framing border remains, now in dark grey */
+    border: 2px solid var(--text-color);
+    margin-top: 60px;
+    margin-bottom: 60px;
+    padding: 30px;
+    padding-bottom: 15px;
+    max-width: 660px;
+    min-height: auto;
+    height: auto;
+}
+
+/* Typography & Layout Polish */
+header, footer, .admin-header {
+    border: none;
+    padding-top: 20px;
+    background: transparent;
+}
+
+header {
+    padding-top: 0;
+    margin-top: 0;
+}
+
+footer {
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+a {
+    color: var(--accent-color);
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
+}
+
+a:hover {
+    color: var(--hover-color);
+    border-bottom: 1px solid var(--hover-color);
+}
+
+header a {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    border-bottom: none;
+    color: var(--h-color);
+}
+
+header a:hover {
+    border-bottom: none;
+}
+
+h1, h2, h3 {
+    color: var(--h-color);
+}
+
+/* Inputs mimic paper forms */
+input, textarea {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--accent-color);
+    font-family: var(--font-serif);
+    transition: border-color 0.3s;
+    font-size: 1rem;
+    color: var(--h-color); /* Explicitly set input text color for clarity */
+}
+
+input:focus, textarea:focus {
+    border-bottom-color: var(--hover-color);
+    outline: none; /* Good practice to remove default outline if border changes */
+}
+
+.btn {
+    background-color: var(--accent-color);
+    /* Note: This keeps button text as the body text color (#444).
+       If you prefer white text on buttons, change this to color: #fff;
+    */
+    color: #ffffff; /* Override: White text looks cleaner on the pink accent in light mode */
+    border: none;
+    padding: 10px 20px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: var(--hover-color);
+}
+
+/* Table styling */
+.fb-table th {
+    background-color: var(--accent-color);
+    color: #ffffff; /* Override: White text for headers matches the button style */
+    padding: 10px;
+    text-align: left;
+}
+
+.fb-table td {
+    border-bottom: 1px solid var(--text-color);
+    padding: 10px;
+}
