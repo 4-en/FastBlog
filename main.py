@@ -386,7 +386,8 @@ async def save_post(
 @app.post("/admin/delete/{post_id}")
 async def delete_post(post_id: int, user: str = Depends(check_admin_session)):
     with get_db_connection() as conn:
-        conn.execute("DELETE FROM posts WHERE id = ?", (post_id,)).commit()
+        conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+        conn.commit()
         
     cache_key = f"/post/{post_id}"
     if cache_key in page_cache:
@@ -398,4 +399,4 @@ async def delete_post(post_id: int, user: str = Depends(check_admin_session)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
